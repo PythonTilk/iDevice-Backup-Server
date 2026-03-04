@@ -22,7 +22,7 @@ class LibIMobileDevice:
     @classmethod
     def get_connected_devices(cls):
         """Returns list of dicts: [{'udid': '...', 'type': 'usb|network'}]"""
-        success, out, err = cls._run_cmd(["idevice_id", "-l", "-d"])
+        success, out, err = cls._run_cmd(["idevice_id"])
         devices = []
         if success:
             for line in out.splitlines():
