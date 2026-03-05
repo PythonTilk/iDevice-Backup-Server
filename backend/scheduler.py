@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 scheduler = BackgroundScheduler({"apscheduler.job_defaults.max_instances": "1"})
 
 
-def run_backup_job(udid: str, backup_path: str, strategy: str):
+def run_backup_job(
+    udid: str, backup_path: str, strategy: str, is_network: bool = False
+):
     logger.info(f"Starting backup task for device {udid}")
 
     db = get_db()
@@ -25,7 +27,9 @@ def run_backup_job(udid: str, backup_path: str, strategy: str):
     db.commit()
 
     try:
-        success, msg = LibIMobileDevice.backup_device(udid, backup_path, strategy)
+        success, msg = LibIMobileDevice.backup_device(
+            udid, backup_path, strategy, is_network=is_network
+        )
 
         if success:
             db.execute(
@@ -93,10 +97,20 @@ def check_for_backups():
 
         if should_backup:
             logger.info(f"Device {udid} is due for backup. Enqueueing.")
+
+            # Find if network
+            dev_info = next((d for d in connected if d["udid"] == udid), None)
+            is_network = dev_info["type"] == "network" if dev_info else False
+
             # Run it async using apscheduler job
             scheduler.add_job(
                 run_backup_job,
-                args=[udid, device["backup_path"], device["overwrite_strategy"]],
+                args=[
+                    udid,
+                    device["backup_path"],
+                    device["overwrite_strategy"],
+                    is_network,
+                ],
             )
 
 

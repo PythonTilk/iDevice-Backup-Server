@@ -35,8 +35,11 @@ class LibIMobileDevice:
         return devices
 
     @classmethod
-    def get_device_info(cls, udid: str):
-        success, out, err = cls._run_cmd(["ideviceinfo", "-u", udid, "-x"])
+    def get_device_info(cls, udid: str, is_network: bool = False):
+        cmd = ["ideviceinfo", "-u", udid, "-x"]
+        if is_network:
+            cmd.insert(1, "-n")
+        success, out, err = cls._run_cmd(cmd)
         if not success:
             return None
 
@@ -50,13 +53,19 @@ class LibIMobileDevice:
             return None
 
     @classmethod
-    def is_paired(cls, udid: str):
-        success, out, err = cls._run_cmd(["idevicepair", "-u", udid, "validate"])
+    def is_paired(cls, udid: str, is_network: bool = False):
+        cmd = ["idevicepair", "-u", udid, "validate"]
+        if is_network:
+            cmd.insert(1, "-n")
+        success, out, err = cls._run_cmd(cmd)
         return "SUCCESS" in out
 
     @classmethod
-    def pair_device(cls, udid: str):
-        success, out, err = cls._run_cmd(["idevicepair", "-u", udid, "pair"])
+    def pair_device(cls, udid: str, is_network: bool = False):
+        cmd = ["idevicepair", "-u", udid, "pair"]
+        if is_network:
+            cmd.insert(1, "-n")
+        success, out, err = cls._run_cmd(cmd)
         if "SUCCESS" in out:
             return (
                 True,
@@ -67,7 +76,13 @@ class LibIMobileDevice:
         return False, "Unknown error during pairing"
 
     @classmethod
-    def backup_device(cls, udid: str, dest_path: str, strategy: str = "incremental"):
+    def backup_device(
+        cls,
+        udid: str,
+        dest_path: str,
+        strategy: str = "incremental",
+        is_network: bool = False,
+    ):
         if strategy == "full":
             logger.info(
                 f"Full backup requested for {udid}. Removing old backup dir: {dest_path}"
@@ -79,10 +94,13 @@ class LibIMobileDevice:
         os.makedirs(dest_path, exist_ok=True)
 
         # Enable wifi sync if on USB
-        cls._run_cmd(["idevicepair", "-u", udid, "wifi", "on"])
+        if not is_network:
+            cls._run_cmd(["idevicepair", "-u", udid, "wifi", "on"])
 
         # Run backup
         cmd = ["idevicebackup2", "-u", udid, "backup", dest_path]
+        if is_network:
+            cmd.insert(1, "-n")
         logger.info(f"Running backup command: {' '.join(cmd)}")
 
         # We run this one with Popen to stream logs or wait

@@ -59,8 +59,9 @@ def get_devices():
     for dev in connected_devices:
         udid = dev["udid"]
         conn_type = dev["type"]
+        is_network = conn_type == "network"
 
-        info = LibIMobileDevice.get_device_info(udid)
+        info = LibIMobileDevice.get_device_info(udid, is_network=is_network)
         name = info.get("DeviceName", "Unknown") if info else "Unknown"
 
         if udid in saved_dict:
@@ -68,6 +69,9 @@ def get_devices():
             device_data["connected"] = True
             device_data["connection_type"] = conn_type
             device_data["name"] = name
+            device_data["paired"] = LibIMobileDevice.is_paired(
+                udid, is_network=is_network
+            )
             results.append(device_data)
         else:
             new_dev = {
@@ -78,7 +82,7 @@ def get_devices():
                 "last_backup": None,
                 "backup_path": f"/backups/{udid}",
                 "overwrite_strategy": "incremental",  # or 'full'
-                "paired": LibIMobileDevice.is_paired(udid),
+                "paired": LibIMobileDevice.is_paired(udid, is_network=is_network),
             }
             results.append(new_dev)
 
@@ -105,7 +109,11 @@ def get_devices():
 
 @app.post("/api/devices/{udid}/pair")
 def pair_device(udid: str):
-    success, msg = LibIMobileDevice.pair_device(udid)
+    connected = LibIMobileDevice.get_connected_devices()
+    dev_info = next((d for d in connected if d["udid"] == udid), None)
+    is_network = dev_info["type"] == "network" if dev_info else False
+
+    success, msg = LibIMobileDevice.pair_device(udid, is_network=is_network)
     if not success:
         raise HTTPException(status_code=400, detail=msg)
     return {"status": "success", "message": "Paired successfully"}
@@ -136,6 +144,10 @@ def trigger_backup(udid: str, background_tasks: BackgroundTasks):
 
     device_data = dict(row)
 
+    connected = LibIMobileDevice.get_connected_devices()
+    dev_info = next((d for d in connected if d["udid"] == udid), None)
+    is_network = dev_info["type"] == "network" if dev_info else False
+
     # We trigger in background
     from scheduler import run_backup_job
 
@@ -144,6 +156,7 @@ def trigger_backup(udid: str, background_tasks: BackgroundTasks):
         udid,
         device_data["backup_path"],
         device_data["overwrite_strategy"],
+        is_network,
     )
 
     return {"status": "success", "message": "Backup started in background"}
