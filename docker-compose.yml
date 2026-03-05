@@ -1,15 +1,17 @@
 version: "3.9"
 
 services:
-  zimaos-ibackup:
+  tetherless-ibackup:
     image: ghcr.io/pythontilk/zimaos-ibackup:latest
-    container_name: zimaos-ibackup
+    container_name: tetherless-ibackup
     network_mode: host
     privileged: true
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Berlin
+      - BACKUP_INTERVAL_HOURS=24
+      - CHECK_INTERVAL_HOURS=1
     volumes:
       - /var/lib/lockdown:/var/lib/lockdown
       - /dev/bus/usb:/dev/bus/usb

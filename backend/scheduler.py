@@ -2,6 +2,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime, timedelta
 import logging
+import os
 
 from database import get_db
 from libimobiledevice import LibIMobileDevice
@@ -10,6 +11,10 @@ logger = logging.getLogger(__name__)
 
 # Run backup jobs sequentially to avoid overloading usbmuxd and disk IO
 scheduler = BackgroundScheduler({"apscheduler.job_defaults.max_instances": "1"})
+
+# Configure Intervals via Environment Variables
+BACKUP_INTERVAL_HOURS = int(os.environ.get("BACKUP_INTERVAL_HOURS", 24))
+CHECK_INTERVAL_HOURS = int(os.environ.get("CHECK_INTERVAL_HOURS", 1))
 
 
 def run_backup_job(
@@ -88,7 +93,7 @@ def check_for_backups():
         else:
             try:
                 last_time = datetime.strptime(last_backup, "%Y-%m-%d %H:%M:%S")
-                if datetime.now() - last_time > timedelta(hours=24):
+                if datetime.now() - last_time > timedelta(hours=BACKUP_INTERVAL_HOURS):
                     should_backup = True
                 else:
                     should_backup = False
@@ -117,7 +122,7 @@ def check_for_backups():
 def start_scheduler():
     scheduler.add_job(
         check_for_backups,
-        trigger=IntervalTrigger(hours=1),
+        trigger=IntervalTrigger(hours=CHECK_INTERVAL_HOURS),
         id="hourly_backup_check",
         replace_existing=True,
     )

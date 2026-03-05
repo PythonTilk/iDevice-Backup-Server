@@ -1,16 +1,16 @@
 # iDevice-Backup-Server
 
-A fully containerized solution designed for **ZimaOS** (and other Linux environments) to automatically back up your iOS devices (iPhones/iPads) over Wi-Fi. 
+A fully containerized solution designed for any Linux home server (ZimaOS, CasaOS, Ubuntu, Unraid, etc.) to automatically back up your iOS devices (iPhones/iPads) over Wi-Fi. 
 
 Powered by [`libimobiledevice`](https://libimobiledevice.org/) under the hood, this project wraps the command-line tools into a sleek React frontend and an automated Python backend.
 
-![ZimaOS iPhone Backup](https://img.shields.io/badge/Status-Active-brightgreen.svg) ![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)
+![Tetherless iOS Backup](https://img.shields.io/badge/Status-Active-brightgreen.svg) ![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)
 
 ## Features
 
 - 📱 **Wireless Backups:** Once initially paired via USB, all subsequent backups happen seamlessly over Wi-Fi without cables!
 - 🎨 **Web Interface:** A modern, responsive React + Tailwind CSS web UI to monitor device status, trigger backups, and change settings.
-- ⏰ **Automated Scheduling:** A background task checks every hour to see if an authorized, reachable iOS device is due for a backup (default interval: 24 hours).
+- ⏰ **Automated Scheduling:** A background task checks periodically to see if an authorized, reachable iOS device is due for a backup.
 - ⚙️ **Custom Strategies:** Choose between standard **Incremental** backups (faster, saves space) or **Full** overwrites for each device.
 - 🐳 **Dockerized:** Easy deployment using `docker-compose`. Custom built with `usbmuxd2` to ensure proper Linux Wi-Fi Sync via Avahi (mDNS).
 
@@ -27,15 +27,17 @@ You can use the pre-built Docker image from the GitHub Container Registry.
 Create a `docker-compose.yml` file:
 ```yaml
 services:
-  zimaos-ibackup:
+  tetherless-ibackup:
     image: ghcr.io/pythontilk/zimaos-ibackup:latest
-    container_name: zimaos-ibackup
+    container_name: tetherless-ibackup
     network_mode: host    # VERY IMPORTANT for Wi-Fi discovery
     privileged: true      # Required for USB mounting
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Berlin
+      - BACKUP_INTERVAL_HOURS=24  # How often a device should be backed up (in hours)
+      - CHECK_INTERVAL_HOURS=1    # How often the scheduler checks for connected devices
     volumes:
       - /var/lib/lockdown:/var/lib/lockdown      # Persists pairing certs
       - /dev/bus/usb:/dev/bus/usb                # USB Passthrough
