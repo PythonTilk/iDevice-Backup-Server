@@ -1,4 +1,4 @@
-# ZimaOS iPhone Auto Backup
+# iDevice-Backup-Server
 
 A fully containerized solution designed for **ZimaOS** (and other Linux environments) to automatically back up your iOS devices (iPhones/iPads) over Wi-Fi. 
 
